@@ -9,6 +9,8 @@ use opencv::{
     videoio,
     highgui::wait_key,
 };
+use opencv::imgproc::hough_circles;
+use opencv::imgproc::HoughModes::HOUGH_GRADIENT;
 
 
 fn main()->Result<()>{
@@ -44,6 +46,22 @@ fn main()->Result<()>{
                     imgproc::LINE_8,
                     0
                 )?;
+
+                let eye_gray = &gray[eye_y: eye.y + eye.height, eye_x: eye.x + eye.width];
+                
+                let circles = &mut ();
+
+                let hough_circles = hough_circles(
+                    eye_gray, 
+                    circles,
+                    1,
+                    0.0,
+                    0.0,
+                    200.0,
+                    1.0,
+                    0,
+                    0
+                );
             }
 
         }
@@ -53,8 +71,6 @@ fn main()->Result<()>{
             break
         }
     }
-
-
 
     Ok(())
 }
