@@ -8,9 +8,9 @@ use opencv::{
     types,
     videoio,
     highgui::wait_key,
+    imgproc::{hough_circles, HoughModes},
+    core::{_OutputArray, Rect, Scalar, ToOutputArray, Vector},
 };
-use opencv::imgproc::hough_circles;
-use opencv::imgproc::HoughModes::HOUGH_GRADIENT;
 
 
 fn main()->Result<()>{
@@ -22,9 +22,13 @@ fn main()->Result<()>{
 
     loop{
         cam.read(&mut img)?;
+
         let mut gray = Mat::default();
+
         imgproc::cvt_color(&img, &mut gray, imgproc::COLOR_BGR2GRAY, 0)?;
+
         let mut eyes = types::VectorOfRect::new();
+
         eye_cascade.detect_multi_scale(
             &gray,
             &mut eyes,
@@ -34,27 +38,25 @@ fn main()->Result<()>{
             core::Size::new(10, 10),
             core::Size::new(0, 0)
         )?;
-        println!("{:?}", eyes);
+
+        //println!("{:?}", eyes);
+
         if eyes.len() > 0{
             for eye in eyes.iter(){
 
                 imgproc::rectangle(
                     &mut img,
                     eye,
-                    core::Scalar::new(0f64, 255f64, 0f64, 0f64),
+                    Scalar::new(0f64, 255f64, 0f64, 0f64),
                     2,
                     imgproc::LINE_8,
                     0
                 )?;
 
-                let eye_gray = &gray[eye_y: eye.y + eye.height, eye_x: eye.x + eye.width];
-                
-                let circles = &mut ();
-
                 let hough_circles = hough_circles(
-                    eye_gray, 
-                    circles,
-                    1,
+                    &gray,
+                    &mut img,
+                    0,
                     0.0,
                     0.0,
                     200.0,
@@ -62,10 +64,16 @@ fn main()->Result<()>{
                     0,
                     0
                 );
+
+                let eye_x_pos = (eye.x + eye.width) / 2;
+                let eye_y_pos = (eye.y + eye.height) / 2;
+
+                println!("{}, {}", eye_x_pos, eye_y_pos);
             }
 
         }
         highgui::imshow("img", &img)?;
+
         let pressed_key = wait_key(30)?;
         if pressed_key == 27 /* Escape key */ {
             break
