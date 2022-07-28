@@ -1,51 +1,60 @@
 use opencv::{
+    Result,
+    prelude::*,
+    objdetect,
     highgui,
     imgproc,
-    prelude::*,
-    Result,
-    videoio::CAP_ANY,
-    videoio::VideoCapture,
-    objdetect::CascadeClassifier,
-    imgproc::rectangle,
-    core::Scalar,
+    core,
+    types,
+    videoio,
+    highgui::wait_key,
 };
 
 
-fn main() -> Result<()> {
-    let GREEN =
+fn main()->Result<()>{
 
-    let eye_cascade = CascadeClassifier::new("righteye_2splits.xml");
+    let mut cam = videoio::VideoCapture::new(0, videoio::CAP_ANY)?;
 
-    let mut cam = VideoCapture::new(0, CAP_ANY)?;
+    let mut eye_cascade = objdetect::CascadeClassifier::new("righteye_2splits.xml")?;
+    let mut img = Mat::default();
 
-    let opened = VideoCapture::is_opened(&cam)?;
-    if !opened { panic!("Unable to open default camera!"); }
-    loop {
-        let mut frame = Mat::default();
+    loop{
+        cam.read(&mut img)?;
+        let mut gray = Mat::default();
+        imgproc::cvt_color(&img, &mut gray, imgproc::COLOR_BGR2GRAY, 0)?;
+        let mut eyes = types::VectorOfRect::new();
+        eye_cascade.detect_multi_scale(
+            &gray,
+            &mut eyes,
+            1.1,
+            10,
+            objdetect::CASCADE_SCALE_IMAGE,
+            core::Size::new(10, 10),
+            core::Size::new(0, 0)
+        )?;
+        println!("{:?}", eyes);
+        if eyes.len() > 0{
+            for eye in eyes.iter(){
 
-        cam.read(&mut frame)?;
-
-        if frame.size()?.width > 0 {
-            let mut gray = Mat::default();
-
-            imgproc::cvt_color(
-                &frame,
-                &mut gray,
-                imgproc::COLOR_BGR2GRAY,
-                0,
-            )?;
-
-            let eyes = eye_cascade.unwrap().detect_multi_scale(&gray);
-
-            for (eye_x, eye_y, eye_width, eye_height) in eyes {
-                rectangle(image, (eye_x, eye_y) + (eye_x + eye_width, eye_y + eye_height), Scalar::from(0, 255, 0), 2, 1, 2)
+                imgproc::rectangle(
+                    &mut img,
+                    eye,
+                    core::Scalar::new(0f64, 255f64, 0f64, 0f64),
+                    2,
+                    imgproc::LINE_8,
+                    0
+                )?;
             }
 
-            highgui::imshow("frame", &gray)?;
         }
-        if highgui::wait_key(10)? > 0 {
-            break;
+        highgui::imshow("img", &img)?;
+        let pressed_key = wait_key(30)?;
+        if pressed_key == 27 /* Escape key */ {
+            break
         }
     }
+
+
+
     Ok(())
 }
